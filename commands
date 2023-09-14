@@ -1,5 +1,0 @@
-pip install requests
-pip install pandas
-pip install google-cloud-bigquery
-pip install pandas-gbq -U
-pip install sqlite3

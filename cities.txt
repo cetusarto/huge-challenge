@@ -1,0 +1,3 @@
+Bucaramanga,Colombia
+New_York,USA
+Batman,Turkey

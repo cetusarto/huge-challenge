@@ -6,7 +6,7 @@ def create_dataset():
     dataset = client.create_dataset(dataset, timeout=30)
     print("Created dataset {}.{}".format(client.project, dataset.dataset_id))
 
-#Checks dataset existance
+# Checks dataset existance
 def dataset_exists():
     try:
         client.get_dataset(dataset_id)
@@ -16,11 +16,12 @@ def dataset_exists():
         print("Dataset {} is not found".format(dataset_id))
         return False
 
-
+# Modules used
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 import pandas_gbq, pandas as pd, sqlite3,sys
 
+# Global variables for Client server connection
 client = bigquery.Client()
 dataset = "weather"
 table = "predictions"
@@ -35,7 +36,7 @@ def main(args):
     temp = False
     if args : temp =args[0] 
 
-    # Connect to sqlite db
+    # Connect to sqlite db to get the local data
     conn = sqlite3.connect('weather_database.db')
     df = pd.read_sql_query("SELECT * FROM weather_data", conn)
     df["time"] = pd.to_datetime(df["time"])
@@ -48,6 +49,7 @@ def main(args):
     conn.execute("DELETE FROM weather_data where True")
     print("Deleted from local database")
 
+    # If specified argument, does the query
     if temp:
         if temp not in ['c','k','f']: print("Incorrect parameter", temp,". It should be c, k or f"); conn.commit();conn.close(); return
         print("Querying and printing query using", temp, "as units")

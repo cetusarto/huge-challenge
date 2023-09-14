@@ -14,6 +14,7 @@ def extraction(city, location):
         logger.warning("Failed API call for {} city. Reason: '{}'".format(city, json["reason"]))
         return
 
+    #Getting necessary data
     newJson = json["hourly"]
     newJson["city"], newJson["measure_ts"] = city, request_ts
 
@@ -30,9 +31,8 @@ def transformation(json):
 
     logger.info("Correct data being processed for {} city".format(json["city"]))
 
-    df.rename(columns={"temperature_2m": "temperature_c","windspeed_10m": "windspeed","relativehumidity_2m": "humidity"},inplace=True)
-
     #Transformations 
+    df.rename(columns={"temperature_2m": "temperature_c","windspeed_10m": "windspeed","relativehumidity_2m": "humidity"},inplace=True)
     df = df.iloc[24:]  # Cleaning day 0 temperature 
     df["temperature_c"] = df["temperature_c"].round(2)
     df["temperature_f"] = round(df["temperature_c"] * 1.8 + 32, 2)
@@ -50,7 +50,7 @@ def loading(df):
     if df is None: 
         logger.warning("Data was not loaded into table")
         return
-    # DDL with unique keys time and city in order to allow replacements
+    # DDL for local database
     ddl = """ CREATE TABLE IF NOT EXISTS weather_data (
             time datetime64[ns],
             temperature_c float64,
@@ -67,6 +67,7 @@ def loading(df):
 
     if not os.path.isfile(db): logger.info("Database (.db file) was created for the first time")
 
+    # Connects to database, executes ddl and inserts the dataframe 
     conn = sqlite3.connect(db)
     conn.execute(ddl)
     df.to_sql("weather_data", conn, if_exists="append", index=False)
@@ -75,12 +76,13 @@ def loading(df):
     logger.info("Database updated with the last API call for {} city".format(df["city"].iloc[0]))
 
 
-# Checks the data type and looks for nulls
+# Checks the data type and looks for null values
 def verification(df):
     # Posseses any null value
     if df.isnull().sum().sum() != 0:
         logger.warning("Response json with null values. Failed to process")
         return False
+
     # Check if the time format is correct
     try:
         df["time"] = pd.to_datetime(df["time"])
@@ -96,7 +98,7 @@ def verification(df):
         "city": "object",
         "measure_ts": "datetime64[ns]",
     }
-    # Has the correct type
+    
     for col_name, expected_type in expected_types.items():
         if col_name not in df.columns:
             logger.warning(
@@ -105,13 +107,11 @@ def verification(df):
             return False  # Column not found in DataFrame
         else:
             if df[col_name].dtype.name != expected_type:
-                logger.warning(
-                    "Response json with incorrect data types. Failed to process"
-                )
+                logger.warning("Response json with incorrect data types. Failed to process")
                 return False
     return True
 
-
+# modules used
 import sys, requests, logging, pandas as pd, time, sqlite3, os
 
 # logger config
@@ -120,12 +120,14 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main(argv):
+    # Gets all cities on specified txt file, citiesLoc by default
     cities =""
     if argv : cities = argv[0]
     else: cities = "citiesLoc.txt"
     
     logger.info("Begginning ETL processes based on cities found in {} text file".format(cities))
 
+    #Iterates through all cities in the txt creating an etl process for each one
     f = open(cities,"r")
     for l in f.readlines():
         city, lat, long = l.strip().split(" ")
@@ -139,5 +141,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    db = "weather_database.db"
 

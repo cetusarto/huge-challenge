@@ -1,5 +1,5 @@
 #! /bin/bash
-sudo apt install git-all
+sudo apt install git
 sudo apt update
 sudo apt install python3 
 PROJECT_ID = $(gcloud config get project)
